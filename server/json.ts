@@ -1,6 +1,6 @@
-import { ServerRequest } from "https://deno.land/std@0.65.0/http/server.ts";
+import { Request } from "./request.ts";
 
-export async function jsonBody(req: ServerRequest): Promise<any> {
+export async function jsonBody(req: Request): Promise<any> {
     try {
         const buf: Uint8Array = await Deno.readAll(req.body);
         return JSON.parse(new TextDecoder().decode(buf));

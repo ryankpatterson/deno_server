@@ -1,6 +1,7 @@
-import { listenAndServe, ServerRequest } from "https://deno.land/std@0.65.0/http/server.ts";
+import { listenAndServe, ServerRequest } from "https://deno.land/std@0.66.0/http/server.ts";
+import { Request } from "./request.ts";
 
-type handler = (req: ServerRequest) => void;
+type handler = (req: Request) => void;
 
 interface routeAndHandler {
     route: string;
@@ -21,41 +22,42 @@ export class Routes {
         this.putRoutes = [];
     }
 
-    get(url: string, callback: (req: ServerRequest) => void) {
+    get(url: string, callback: (req: Request) => void) {
         this.getRoutes.push({route: url, handler: callback});
     }
 
-    post(url: string, callback: (req: ServerRequest) => void) {
+    post(url: string, callback: (req: Request) => void) {
         this.postRoutes.push({route: url, handler: callback});
     }
 
-    delete(url: string, callback: (req: ServerRequest) => void) {
+    delete(url: string, callback: (req: Request) => void) {
         this.delRoutes.push({route: url, handler: callback});
     }
 
-    put(url: string, callback: (req: ServerRequest) => void) {
+    put(url: string, callback: (req: Request) => void) {
         this.putRoutes.push({route: url, handler: callback});
     }
 
     run() {
-        listenAndServe({port: this.port}, (req) => {
+        listenAndServe({port: this.port}, (req: ServerRequest) => {
+            const request = new Request(req);
             switch (req.method) {
                 case 'GET':
-                    this.handleRequest(this.getRoutes, req);
+                    this.handleRequest(this.getRoutes, request);
                     break;
                 case 'POST':
-                    this.handleRequest(this.postRoutes, req);
+                    this.handleRequest(this.postRoutes, request);
                 case 'DELETE':
-                    this.handleRequest(this.delRoutes, req);
+                    this.handleRequest(this.delRoutes, request);
                 case 'PUT':
-                    this.handleRequest(this.putRoutes, req);
+                    this.handleRequest(this.putRoutes, request);
                 default:
                     break;
             }
         })
     }
 
-    handleRequest(methodHandlers: routeAndHandler[], req: ServerRequest) {
+    handleRequest(methodHandlers: routeAndHandler[], req: Request) {
         methodHandlers.forEach(r => {
             if (req.url.endsWith(r.route)) {
                 r.handler(req);

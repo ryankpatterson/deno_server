@@ -1,4 +1,4 @@
-import { ServerRequest } from "https://deno.land/std@0.65.0/http/server.ts";
+import { Request } from "./request.ts";
 
 /**
  * 
@@ -6,7 +6,7 @@ import { ServerRequest } from "https://deno.land/std@0.65.0/http/server.ts";
  * 
  * @returns a promise with the information for the files and other content sent in the form.
  */
-export async function readFormData(req: ServerRequest) {
+export async function readFormData(req: Request) {
     if (!req.headers.get('content-type')?.startsWith('multipart/form-data')) {
         throw Error('Request is not multipart/formdata');
     }
