@@ -87,9 +87,8 @@ export class Routes {
   run() {
     listenAndServe({ port: this.port }, (req: ServerRequest) => {
       const request = new Request(req);
-      if (!this.checkAllRoutes(request)) {
-        this.incomingRequest(request);
-      }
+      this.handleRequest(this.allRoutes, request);
+      this.incomingRequest(request);
     });
   }
 
@@ -118,21 +117,19 @@ export class Routes {
   }
 
   handleRequest(methodHandlers: routeAndHandler[], req: Request) {
+    if (req.url.includes("?")) {
+      const params = req.url.split("?")[1];
+      for (const param of params.split("&")) {
+        const [key, val] = param.split("=");
+        req.params[key] = val;
+      }
+    }
+    const url = req.url.split("?")[0];
     methodHandlers.forEach((r) => {
-      if (req.url.endsWith(r.route)) {
+      if (url.endsWith(r.route)) {
         r.handler(req);
       }
     });
-  }
-
-  checkAllRoutes(req: Request): boolean {
-    for (const route of this.allRoutes) {
-      if (req.url.endsWith(route.route)) {
-        route.handler(req);
-        return true;
-      }
-    }
-    return false;
   }
 }
 

@@ -6,6 +6,7 @@ export class Request {
   body: Deno.Reader;
   method: string;
   headers: Headers;
+  params: any;
 
   constructor(req: ServerRequest) {
     this.req = req;
@@ -13,6 +14,7 @@ export class Request {
     this.body = req.body;
     this.headers = req.headers;
     this.method = req.method;
+    this.params = {};
   }
 
   /**
