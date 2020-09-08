@@ -3,10 +3,11 @@ import {
   ServerRequest,
 } from "https://deno.land/std@0.66.0/http/server.ts";
 import { Request } from "./request.ts";
+import { Respond } from "./respond.ts";
 import { walk } from "https://deno.land/std@0.66.0/fs/walk.ts";
 import * as path from "https://deno.land/std@0.66.0/path/mod.ts";
 
-type handler = (req: Request) => void;
+type handler = (req: Request, res: Respond) => void;
 
 interface routeAndHandler {
   route: string;
@@ -36,23 +37,23 @@ export class Routes {
     this.allRoutes = [];
   }
 
-  get(url: string, callback: (req: Request) => void) {
+  get(url: string, callback: (req: Request, res: Respond) => void) {
     this.getRoutes.push({ route: url, handler: callback });
   }
 
-  post(url: string, callback: (req: Request) => void) {
+  post(url: string, callback: (req: Request, res: Respond) => void) {
     this.postRoutes.push({ route: url, handler: callback });
   }
 
-  delete(url: string, callback: (req: Request) => void) {
+  delete(url: string, callback: (req: Request, res: Respond) => void) {
     this.delRoutes.push({ route: url, handler: callback });
   }
 
-  put(url: string, callback: (req: Request) => void) {
+  put(url: string, callback: (req: Request, res: Respond) => void) {
     this.putRoutes.push({ route: url, handler: callback });
   }
 
-  all(url: string, callback: (req: Request) => void) {
+  all(url: string, callback: (req: Request, res: Respond) => void) {
     this.allRoutes.push({ route: url, handler: callback });
   }
 
@@ -87,61 +88,47 @@ export class Routes {
   run() {
     listenAndServe({ port: this.port }, (req: ServerRequest) => {
       const request = new Request(req);
-      this.handleRequest(this.allRoutes, request);
-      this.incomingRequest(request);
+      const response = new Respond(req);
+      this.handleRequest(this.allRoutes, request, response);
+      this.incomingRequest(request, response);
     });
   }
 
-  incomingRequest(request: Request) {
+  incomingRequest(request: Request, response: Respond) {
     switch (request.method) {
       case "GET":
         if (this.staticRoutes.length > 0) {
           for (const route of this.staticRoutes) {
             if (request.url.endsWith(route.route)) {
-              request.sendFile(`${route.directory}/${route.route}`);
+              response.sendFile(`${route.directory}/${route.route}`);
               break;
             }
           }
         }
-        this.handleRequest(this.getRoutes, request);
+        this.handleRequest(this.getRoutes, request, response);
         break;
       case "POST":
-        this.handleRequest(this.postRoutes, request);
+        this.handleRequest(this.postRoutes, request, response);
       case "DELETE":
-        this.handleRequest(this.delRoutes, request);
+        this.handleRequest(this.delRoutes, request, response);
       case "PUT":
-        this.handleRequest(this.putRoutes, request);
+        this.handleRequest(this.putRoutes, request, response);
       default:
         break;
     }
   }
 
-  handleRequest(methodHandlers: routeAndHandler[], req: Request) {
-    if (req.url.includes("?")) {
-      const params = req.url.split("?")[1];
-      for (const param of params.split("&")) {
-        const [key, val] = param.split("=");
-        req.params[key] = val;
-      }
-    }
+  handleRequest(
+    methodHandlers: routeAndHandler[],
+    req: Request,
+    res: Respond,
+  ) {
+    req.getParams();
     const url = req.url.split("?")[0];
     methodHandlers.forEach((r) => {
       if (url.endsWith(r.route)) {
-        r.handler(req);
+        r.handler(req, res);
       }
     });
   }
-}
-
-/**
- * 
- * @param req the request object
- * @returns the body in the form of a Uint8Array
- * 
- * To get JSON from the body, use the json.ts module.
- * To get FormData information use the formData.ts module.
- */
-export async function getBody(req: Request): Promise<Uint8Array> {
-  const buf: Uint8Array = await Deno.readAll(req.body);
-  return buf;
 }

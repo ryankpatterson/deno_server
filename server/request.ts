@@ -1,4 +1,5 @@
 import { ServerRequest } from "https://deno.land/std@0.66.0/http/server.ts";
+import { getCookies } from "https://deno.land/std@0.68.0/http/cookie.ts";
 
 export class Request {
   req: ServerRequest;
@@ -17,31 +18,29 @@ export class Request {
     this.params = {};
   }
 
-  /**
-   * This methods sends a string back to the client.
-   * 
-   * To send JSON use Request.sendJson
-   * @param body the string back to the client
-   */
-  send(body: string) {
-    this.req.respond({ body: body });
+  getParams() {
+    if (this.url.includes("?")) {
+      const params = this.url.split("?")[1];
+      for (const param of params.split("&")) {
+        const [key, val] = param.split("=");
+        this.params[key] = val;
+      }
+    }
+  }
+
+  getCookies() {
+    return getCookies(this.req);
   }
 
   /**
-   * 
-   * @param json the javascript object to send back to the client
-   */
-  sendJson(json: object) {
-    this.req.respond({ body: JSON.stringify(json) });
-  }
-
-  /**
-   * Sends a specified file back to the client
-   * 
-   * @param path the path to the file that will be sent back to the client.
-   */
-  async sendFile(path: string) {
-    const file = await Deno.readFile(path);
-    this.req.respond({ body: file });
+  * 
+  * @returns the body in the form of a Uint8Array
+  * 
+  * To get JSON from the body, use the json.ts module.
+  * To get FormData information use the formData.ts module.
+  */
+  async getBody(): Promise<Uint8Array> {
+    const buf: Uint8Array = await Deno.readAll(this.req.body);
+    return buf;
   }
 }
