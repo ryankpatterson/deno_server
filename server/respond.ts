@@ -64,13 +64,19 @@ export class Respond {
     this.#req.respond(this.#res);
   }
 
-  async download(path: string, filename?: string) {
+  /**
+   * Sends a file back to the client but as an attachment.
+   * 
+   * @param path the path to the file to be downloaded
+   * @param filename the filename that the file will be saved as attachment as.
+   */
+  async download(path: string, filename = "") {
     if (!this.#res.headers) {
       this.#res.headers = new Headers();
     }
     try {
       const file = await Deno.readFile(path);
-      if (filename === undefined) {
+      if (filename === "") {
         filename = basename(path);
       }
       this.#res.headers.append(
